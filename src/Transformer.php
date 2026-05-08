@@ -1,185 +1,328 @@
 <?php
+
 class Transformer {
 
     public function elabora($dati) {
-        $brawlers    = $this->elaboraBrawlers($dati['brawlers']);
-        $battleStats = $this->elaboraBattleStats($dati['battlelog'], $brawlers);
 
-        // Estrae e rimuove il campo interno _brawler_uso
-        $brawlerUso  = $battleStats['_brawler_uso'] ?? [];
-        unset($battleStats['_brawler_uso']);
+        $profilo   = $dati['profilo'] ?? [];
+        $battlelog = $dati['battlelog'] ?? [];
+        $brawlers  = $profilo['brawlers'] ?? [];
 
-        // Calcola usage_rate per ogni brawler (quante volte usato / partite totali)
-        $totalePartite = $battleStats['games_analyzed'];
-        foreach ($brawlers as &$brawler) {
-            $volteUsato = $brawlerUso[$brawler['name']] ?? 0;
-            $brawler['usage_rate'] = $totalePartite > 0
-                ? round($volteUsato / $totalePartite, 2)
-                : 0;
-        }
-        unset($brawler); // rompe il riferimento dell'ultimo elemento dopo foreach con &
+        // Analizza statistiche del SOLO giocatore richiesto
+        $stats = $this->calcolaStatistiche(
+            $battlelog,
+            $profilo['tag'] ?? null
+        );
+
+        // Arricchisce i brawler con usage_rate e win_rate
+        $brawlersElaborati = $this->elaboraBrawlers(
+            $brawlers,
+            $stats['brawler_usage'],
+            $stats['brawler_wins'],
+            $stats['games_analyzed']
+        );
 
         return [
+
             'success' => true,
-            'data'    => [
-                'profile'      => $this->elaboraProfilo($dati['profilo']),
-                'battle_stats' => $battleStats,
-                'brawlers'     => $brawlers,
-                'ranking'      => $this->elaboraRanking($dati['rankingGlobale'], $dati['rankingLocale'], $dati['brawlers']),
+
+            'data' => [
+
+                // =====================================
+                // PROFILO
+                // =====================================
+                'profile' => [
+
+                    'tag' => $profilo['tag'] ?? null,
+                    'name' => $profilo['name'] ?? null,
+
+                    'trophies' => $profilo['trophies'] ?? 0,
+                    'highest_trophies' =>
+                        $profilo['highestTrophies'] ?? 0,
+
+                    'exp_level' => $profilo['expLevel'] ?? 0,
+
+                    'solo_victories' =>
+                        $profilo['soloVictories'] ?? 0,
+
+                    'duo_victories' =>
+                        $profilo['duoVictories'] ?? 0,
+
+                    'victories_3v3' =>
+                        $profilo['3vs3Victories'] ?? 0,
+
+                    'club' => [
+                        'name' =>
+                            $profilo['club']['name'] ?? null,
+
+                        'tag'  =>
+                            $profilo['club']['tag'] ?? null,
+                    ]
+                ],
+
+                // =====================================
+                // STATISTICHE RECENTI
+                // =====================================
+                'battle_stats' => [
+
+                    'games_analyzed' =>
+                        $stats['games_analyzed'],
+
+                    'wins' =>
+                        $stats['wins'],
+
+                    'losses' =>
+                        $stats['losses'],
+
+                    'win_rate' =>
+                        $stats['win_rate'],
+
+                    'avg_trophy_change' =>
+                        $stats['avg_trophy_change'],
+
+                    'most_used_brawler' =>
+                        $stats['most_used_brawler'],
+
+                    'mode_breakdown' =>
+                        $stats['mode_breakdown'],
+                ],
+
+                // =====================================
+                // BRAWLERS
+                // =====================================
+                'brawlers' => $brawlersElaborati,
             ],
+
+            // =====================================
+            // META
+            // =====================================
             'meta' => [
+
                 'generated_at' => date('c'),
-                'api_calls'    => $dati['api_calls'],
-                'latency_ms'   => $dati['latency_ms'],
+
+                'api_calls_made' => 2,
             ]
         ];
     }
 
-    private function elaboraProfilo($p) {
-        return [
-            'tag'              => $p['tag']             ?? null,
-            'name'             => $p['name']            ?? null,
-            'trophies'         => $p['trophies']        ?? 0,
-            'highest_trophies' => $p['highestTrophies'] ?? 0,
-            'experience_level' => $p['expLevel']        ?? 0,
-            'victories_3v3'    => $p['3vs3Victories']   ?? 0,
-            'solo_victories'   => $p['soloVictories']   ?? 0,
-            'duo_victories'    => $p['duoVictories']    ?? 0,
-            'club'             => [
-                'name' => $p['club']['name'] ?? null,
-                'tag'  => $p['club']['tag']  ?? null,
-            ],
-        ];
-    }
+    // =========================================================
+    // CALCOLO STATISTICHE RECENTI
+    // =========================================================
+    private function calcolaStatistiche($battlelog, $playerTag) {
 
-    private function elaboraBattleStats($battlelog, array $brawlersElaborati) {
-        $partite   = array_slice($battlelog['items'] ?? [], 0, 10);
-        $vittorie  = 0;
-        $sconfitte = 0;
-        $kills     = 0;
-        $deaths    = 0;
-        $totTrofeiCambiati = 0;
+        $partite = array_slice($battlelog['items'] ?? [], 0, 10);
 
-        // Per usage_rate: contiamo quante volte ogni brawler appare nelle partite
-        $brawlerUso      = [];
-        $brawlerVittorie = [];
+        $wins = 0;
+        $losses = 0;
 
-        $modeConteggio = [];
-        $modeVittorie  = [];
+        $trophyDiff = 0;
+
+        $brawlerUsage = [];
+        $brawlerWins = [];
+
+        $modeGames = [];
+        $modeWins = [];
 
         foreach ($partite as $partita) {
-            $battle    = $partita['battle'] ?? [];
-            $risultato = $battle['result']  ?? '';
 
-            if ($risultato === 'victory') $vittorie++;
-            if ($risultato === 'defeat')  $sconfitte++;
+            $battle = $partita['battle'] ?? [];
 
-            $totTrofeiCambiati += $battle['trophyChange'] ?? 0;
+            $result = $battle['result'] ?? null;
 
-            // K/D: disponibile solo in alcune modalità (es. Brawl Ball non ha kill)
-            $kills  += $battle['starPlayer']['brawler']['kills']  ?? 0;
-            $deaths += $battle['starPlayer']['brawler']['deaths'] ?? 0;
-
-            // Trova il brawler usato dal giocatore
-            $brawlerUsato = $this->trovaBrawlerGiocatore($battle);
-            if ($brawlerUsato !== null) {
-                $nome = $brawlerUsato['name'] ?? 'Unknown';
-                $brawlerUso[$nome]      = ($brawlerUso[$nome]      ?? 0) + 1;
-                if ($risultato === 'victory') {
-                    $brawlerVittorie[$nome] = ($brawlerVittorie[$nome] ?? 0) + 1;
-                }
-            }
-
-            // Mode breakdown
             $mode = $battle['mode'] ?? 'unknown';
-            $modeConteggio[$mode] = ($modeConteggio[$mode] ?? 0) + 1;
-            if ($risultato === 'victory') {
-                $modeVittorie[$mode] = ($modeVittorie[$mode] ?? 0) + 1;
+
+            // Cerca SOLO il brawler del player richiesto
+            $brawler = $this->trovaBrawler(
+                $battle,
+                $playerTag
+            );
+
+            // Se il player non viene trovato, salta
+            if ($brawler === null) {
+                continue;
+            }
+
+            $nomeBrawler = $brawler['name'] ?? 'Unknown';
+
+            // =====================================
+            // Vittorie / sconfitte
+            // =====================================
+            if ($result === 'victory') {
+                $wins++;
+            }
+
+            if ($result === 'defeat') {
+                $losses++;
+            }
+
+            // =====================================
+            // Trofei
+            // =====================================
+            $trophyDiff += $battle['trophyChange'] ?? 0;
+
+            // =====================================
+            // Utilizzo brawler
+            // =====================================
+            $brawlerUsage[$nomeBrawler] =
+                ($brawlerUsage[$nomeBrawler] ?? 0) + 1;
+
+            // =====================================
+            // Vittorie per brawler
+            // =====================================
+            if ($result === 'victory') {
+
+                $brawlerWins[$nomeBrawler] =
+                    ($brawlerWins[$nomeBrawler] ?? 0) + 1;
+            }
+
+            // =====================================
+            // Modalità
+            // =====================================
+            $modeGames[$mode] =
+                ($modeGames[$mode] ?? 0) + 1;
+
+            if ($result === 'victory') {
+
+                $modeWins[$mode] =
+                    ($modeWins[$mode] ?? 0) + 1;
             }
         }
 
-        $totale    = count($partite);
-        $winRate   = $totale > 0 ? round($vittorie / $totale, 2) : 0;
-        $avgTrofei = $totale > 0 ? round($totTrofeiCambiati / $totale, 1) : 0;
-        $kdRatio   = $deaths > 0 ? round($kills / $deaths, 2) : null;
-        // null se nessuna modalità con K/D era presente
+        $games = count($partite);
 
+        // =====================================
+        // Win Rate totale
+        // =====================================
+        $winRate = $games > 0
+            ? round(($wins / $games) * 100, 1)
+            : 0;
+
+        // =====================================
+        // Trofei medi
+        // =====================================
+        $avgTrophyChange = $games > 0
+            ? round($trophyDiff / $games, 1)
+            : 0;
+
+        // =====================================
         // Brawler più usato
-        $mostUsedName    = null;
-        $mostUsedWinRate = 0;
-        if (!empty($brawlerUso)) {
-            arsort($brawlerUso);
-            $mostUsedName = array_key_first($brawlerUso);
-            $giocate = $brawlerUso[$mostUsedName];
-            $vinte   = $brawlerVittorie[$mostUsedName] ?? 0;
-            $mostUsedWinRate = $giocate > 0 ? round($vinte / $giocate, 2) : 0;
+        // =====================================
+        $mostUsed = null;
+
+        if (!empty($brawlerUsage)) {
+
+            arsort($brawlerUsage);
+
+            $mostUsed = array_key_first($brawlerUsage);
         }
 
-        // Aggiunge usage_rate a ogni brawler in base alle partite analizzate
-        // Passiamo $brawlerUso al Transformer principale tramite ritorno esteso
-        // (viene usato in elaboraBrawlers separatamente, vedi sotto)
-
-        // Mode breakdown
+        // =====================================
+        // Breakdown modalità
+        // =====================================
         $modeBreakdown = [];
-        foreach ($modeConteggio as $mode => $games) {
-            $wins = $modeVittorie[$mode] ?? 0;
+
+        foreach ($modeGames as $mode => $totGames) {
+
+            $winsMode = $modeWins[$mode] ?? 0;
+
             $modeBreakdown[] = [
-                'mode'     => $mode,
-                'games'    => $games,
-                'wins'     => $wins,
-                'win_rate' => $games > 0 ? round($wins / $games, 2) : 0,
+
+                'mode' => $mode,
+
+                'games' => $totGames,
+
+                'wins' => $winsMode,
+
+                'win_rate' => $totGames > 0
+                    ? round(($winsMode / $totGames) * 100, 1)
+                    : 0
             ];
         }
 
         return [
-            'games_analyzed'    => $totale,
-            'wins'              => $vittorie,
-            'losses'            => $sconfitte,
-            'win_rate'          => $winRate,
-            'kd_ratio'          => $kdRatio,
-            'most_used_brawler' => [
-                'name'     => $mostUsedName,
-                'win_rate' => $mostUsedWinRate,
-            ],
-            'avg_trophies_change' => $avgTrofei,
-            'mode_breakdown'      => $modeBreakdown,
-            // Passiamo l'uso grezzo per usage_rate nei brawlers
-            '_brawler_uso'        => $brawlerUso,
+
+            'games_analyzed' => $games,
+
+            'wins' => $wins,
+
+            'losses' => $losses,
+
+            'win_rate' => $winRate,
+
+            'avg_trophy_change' => $avgTrophyChange,
+
+            'most_used_brawler' => $mostUsed,
+
+            'mode_breakdown' => $modeBreakdown,
+
+            // dati interni
+            'brawler_usage' => $brawlerUsage,
+
+            'brawler_wins' => $brawlerWins,
         ];
     }
 
-    private function trovaBrawlerGiocatore($battle) {
-        if (isset($battle['teams'])) {
-            foreach ($battle['teams'] as $team) {
-                foreach ($team as $player) {
-                    return $player['brawler'] ?? null;
-                }
-            }
-        }
-        if (isset($battle['players'])) {
-            return $battle['players'][0]['brawler'] ?? null;
-        }
-        return null;
-    }
+    // =========================================================
+    // ELABORAZIONE BRAWLERS
+    // =========================================================
+    private function elaboraBrawlers(
+        $brawlers,
+        $usage,
+        $wins,
+        $gamesAnalyzed
+    ) {
 
-    private function elaboraBrawlers($dati) {
         $lista = [];
 
-        foreach ($dati['items'] ?? [] as $b) {
+        foreach ($brawlers as $b) {
+
+            $nome = $b['name'] ?? 'Unknown';
+
+            $usato = $usage[$nome] ?? 0;
+
+            $vinte = $wins[$nome] ?? 0;
+
+            $usageRate = $gamesAnalyzed > 0
+                ? round(($usato / $gamesAnalyzed) * 100, 1)
+                : 0;
+
+            $winRate = $usato > 0
+                ? round(($vinte / $usato) * 100, 1)
+                : 0;
+
             $lista[] = [
-                'id'                   => $b['id']              ?? null,
-                'name'                 => $b['name']            ?? null,
-                'power'                => $b['power']           ?? 0,
-                'trophies'             => $b['trophies']        ?? 0,
-                'highest_trophies'     => $b['highestTrophies'] ?? 0,
-                'rank'                 => $b['rank']            ?? 0,
-                'gadgets_unlocked'     => count($b['gadgets']    ?? []),
-                'star_powers_unlocked' => count($b['starPowers'] ?? []),
-                // usage_rate viene aggiunto dopo da elabora()
-                'usage_rate'           => 0,
+
+                'id' => $b['id'] ?? null,
+
+                'name' => $nome,
+
+                'power' => $b['power'] ?? 0,
+
+                'rank' => $b['rank'] ?? 0,
+
+                'trophies' => $b['trophies'] ?? 0,
+
+                'highest_trophies' =>
+                    $b['highestTrophies'] ?? 0,
+
+                'gadgets_unlocked' =>
+                    count($b['gadgets'] ?? []),
+
+                'star_powers_unlocked' =>
+                    count($b['starPowers'] ?? []),
+
+                // =====================================
+                // STATISTICHE AGGIUNTIVE
+                // =====================================
+                'times_used_recently' => $usato,
+
+                'usage_rate' => $usageRate,
+
+                'win_rate_recent' => $winRate,
             ];
         }
 
+        // Ordina per trofei
         usort($lista, function($a, $b) {
             return $b['trophies'] - $a['trophies'];
         });
@@ -187,24 +330,44 @@ class Transformer {
         return $lista;
     }
 
-    private function elaboraRanking($rankingGlobale, $rankingLocale, $brawlersDati) {
-        $brawlerRankings = [];
-        foreach ($brawlersDati['items'] ?? [] as $b) {
-            $brawlerRankings[] = [
-                'brawler_name' => $b['name']     ?? null,
-                'rank'         => $b['rank']     ?? 0,
-                'trophies'     => $b['trophies'] ?? 0,
-            ];
-        }
-        usort($brawlerRankings, function($a, $b) {
-            return $b['trophies'] - $a['trophies'];
-        });
+    // =========================================================
+    // TROVA IL BRAWLER DEL GIOCATORE
+    // =========================================================
+    private function trovaBrawler($battle, $playerTag = null) {
 
-        return [
-            'global_rank'      => $rankingGlobale['rank'] ?? null,
-            'local_rank'       => $rankingLocale['rank']  ?? null,
-            'country_code'     => COUNTRY_CODE,
-            'brawler_rankings' => $brawlerRankings,
-        ];
+        // Modalità team
+        if (isset($battle['teams'])) {
+
+            foreach ($battle['teams'] as $team) {
+
+                foreach ($team as $player) {
+
+                    if (
+                        isset($player['tag']) &&
+                        strtoupper($player['tag']) === strtoupper($playerTag)
+                    ) {
+                        return $player['brawler'] ?? null;
+                    }
+                }
+            }
+        }
+
+        // Modalità players
+        if (isset($battle['players'])) {
+
+            foreach ($battle['players'] as $player) {
+
+                if (
+                    isset($player['tag']) &&
+                    strtoupper($player['tag']) === strtoupper($playerTag)
+                ) {
+                    return $player['brawler'] ?? null;
+                }
+            }
+        }
+
+        return null;
     }
 }
+
+?>
