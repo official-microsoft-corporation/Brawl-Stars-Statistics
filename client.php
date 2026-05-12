@@ -163,7 +163,7 @@ elseif ($risultato !== null && $risultato['success']) {
     </p>
 
     <p><strong>Tag:</strong>
-        <?= $profilo['tag'] ?>
+        <?= strtoupper($profilo['tag']) ?>
     </p>
 
     <p><strong>Trofei:</strong>
@@ -296,7 +296,7 @@ elseif ($risultato !== null && $risultato['success']) {
 
             <th>Gadget</th>
 
-            <th>Star Powers</th>
+            <th>Abilità Stellare</th>
 
             <th>Equipaggiamenti</th>
 
@@ -364,7 +364,7 @@ elseif ($risultato !== null && $risultato['success']) {
 
             <td>
 
-            <?= !empty($b['hypercharges']) ? '✔' : '✘' ?>
+                <?= !empty($b['hypercharges']) ? '✔' : '✘' ?>
 
             </td>
 
@@ -377,7 +377,7 @@ elseif ($risultato !== null && $risultato['success']) {
             echo
                 'Gadget: ' . ($buffies['gadget'] ? '✔' : '✘')
                 . ' | ' .
-                'Abilita Stellare: ' . ($buffies['starPower'] ? '✔' : '✘')
+                'Abilità Stellare: ' . ($buffies['starPower'] ? '✔' : '✘')
                 . ' | ' .
                 'HyperCharge: ' . ($buffies['hyperCharge'] ? '✔' : '✘');
 
@@ -404,7 +404,7 @@ elseif ($risultato !== null && $risultato['success']) {
         <?= $meta['generated_at'] ?>
     </p>
 
-    <p><strong>API Calls:</strong>
+    <p><strong>Chiamate API:</strong>
         <?= $meta['api_calls_made'] ?>
     </p>
 
