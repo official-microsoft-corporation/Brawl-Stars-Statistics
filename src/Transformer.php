@@ -145,8 +145,42 @@ class Transformer {
             $nomeBrawler = $brawler['name'] ?? 'Unknown';
 
             // =====================================
-            // Vittorie / sconfitte
+            // GESTIONE SHOWDOWN (SOLO / DUO)
             // =====================================
+
+            //showdown non segna nel json vicotry o defeat, ma un rank che indica la posizione
+            if ($mode === 'soloShowdown' || $mode === 'duoShowdown' || $mode === 'trioShowdown') {
+
+                $rank = $battle['rank'] ?? null;
+
+                if ($rank !== null) {
+
+                    // SOLO SHOWDOWN
+                    if ($mode === 'soloShowdown') {
+
+                        if ($rank >= 4) {
+                            $result = 'victory';
+                        } else {
+                            $result = 'defeat';
+                        }
+                    }else if ($mode === 'duoShowdown') {
+                        if ($rank >= 2) {
+                            $result = 'victory';
+                        } else {
+                            $result = 'defeat';
+                        }
+                    }
+
+                    else if ($mode === 'trioShowdown') {
+                        if ($rank >= 2) {
+                            $result = 'victory';
+                        } else {
+                            $result = 'defeat';
+                        }
+                    }
+                }
+            }
+
             if ($result === 'victory') {
                 $wins++;
             }
