@@ -312,13 +312,23 @@ class Transformer {
                     count($b['starPowers'] ?? []),
 
                 // =====================================
-                // STATISTICHE AGGIUNTIVE
+                // EQUIPAGGIAMENTO
                 // =====================================
-                'times_used_recently' => $usato,
+                'gears' => $b['gears'] ?? [],
 
-                'usage_rate' => $usageRate,
+                // =====================================
+                // HYPERCHARGE
+                // =====================================
+                'hypercharges' => $b['hyperCharges'] ?? [],
 
-                'win_rate_recent' => $winRate,
+                // =====================================
+                // BUFFIES
+                // =====================================
+                'buffies' => $b['buffies'] ?? [
+                    'gadget' => false,
+                    'starPower' => false,
+                    'hyperCharge' => false
+                ],
             ];
         }
 

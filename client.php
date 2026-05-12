@@ -113,7 +113,7 @@ if (isset($_GET['tag'])) {
         placeholder="Inserisci il tag senza #"
         value="<?=
             isset($_GET['tag'])
-            ? htmlspecialchars($_GET['tag'])
+            ? $_GET['tag']
             : ''
         ?>"
     >
@@ -163,7 +163,7 @@ elseif ($risultato !== null && $risultato['success']) {
     </p>
 
     <p><strong>Tag:</strong>
-        <?= htmlspecialchars($profilo['tag']) ?>
+        <?= $profilo['tag'] ?>
     </p>
 
     <p><strong>Trofei:</strong>
@@ -219,12 +219,12 @@ elseif ($risultato !== null && $risultato['success']) {
         <?= $stats['win_rate'] ?>%
     </p>
 
-    <p><strong>Media trofei:</strong>
+    <p><strong>Media trofei guadagnati per partita:</strong>
         <?= $stats['avg_trophy_change'] ?>
     </p>
 
     <p><strong>Brawler più usato:</strong>
-        <?= htmlspecialchars($stats['most_used_brawler']) ?>
+        <?= $stats['most_used_brawler'] ?>
     </p>
 
 </div>
@@ -250,7 +250,7 @@ elseif ($risultato !== null && $risultato['success']) {
         <tr>
 
             <td>
-                <?= htmlspecialchars($mode['mode']) ?>
+                <?= $mode['mode'] ?>
             </td>
 
             <td>
@@ -298,11 +298,11 @@ elseif ($risultato !== null && $risultato['success']) {
 
             <th>Star Powers</th>
 
-            <th>Usato Recentemente</th>
+            <th>Equipaggiamenti</th>
 
-            <th>Usage Rate</th>
+            <th>HyperCharge</th>
 
-            <th>Win Rate Recent</th>
+            <th>Buffies</th>
 
         </tr>
 
@@ -311,7 +311,7 @@ elseif ($risultato !== null && $risultato['success']) {
         <tr>
 
             <td>
-                <?= htmlspecialchars($b['name']) ?>
+                <?= $b['name'] ?>
             </td>
 
             <td>
@@ -338,16 +338,51 @@ elseif ($risultato !== null && $risultato['success']) {
                 <?= $b['star_powers_unlocked'] ?>
             </td>
 
-            <td>
-                <?= $b['times_used_recently'] ?>
+           <td>
+
+            <?php
+
+            if (!empty($b['gears'])) {
+
+                $gearNames = [];
+
+                foreach ($b['gears'] as $gear) {
+
+                    $gearNames[] = $gear['name'];
+                }
+
+               echo implode(', ', $gearNames);
+
+            } else {
+
+                echo '-';
+            }
+
+            ?>
+
             </td>
 
             <td>
-                <?= $b['usage_rate'] ?>%
+
+            <?= !empty($b['hypercharges']) ? '✔' : '✘' ?>
+
             </td>
 
             <td>
-                <?= $b['win_rate_recent'] ?>%
+
+            <?php
+
+            $buffies = $b['buffies'];
+
+            echo
+                'Gadget: ' . ($buffies['gadget'] ? '✔' : '✘')
+                . ' | ' .
+                'Abilita Stellare: ' . ($buffies['starPower'] ? '✔' : '✘')
+                . ' | ' .
+                'HyperCharge: ' . ($buffies['hyperCharge'] ? '✔' : '✘');
+
+            ?>
+
             </td>
 
         </tr>

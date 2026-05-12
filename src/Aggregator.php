@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../config/config.php';
 
-class aggregator{
+class Aggregator{
     public function raccogliDati($tag){
     
     $profilo    = $this->chiamaAPI('/players/%23' . $tag);
