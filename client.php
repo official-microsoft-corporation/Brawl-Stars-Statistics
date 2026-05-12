@@ -110,7 +110,7 @@ if (isset($_GET['tag'])) {
     <input
         type="text"
         name="tag"
-        placeholder="Inserisci il tag"
+        placeholder="Inserisci il tag senza #"
         value="<?=
             isset($_GET['tag'])
             ? htmlspecialchars($_GET['tag'])
