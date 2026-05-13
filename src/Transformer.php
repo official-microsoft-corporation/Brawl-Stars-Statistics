@@ -8,7 +8,7 @@ class Transformer {
         $battlelog = $dati['battlelog'] ?? [];
         $brawlers  = $profilo['brawlers'] ?? [];
 
-        // Analizza statistiche del SOLO giocatore richiesto
+        // Analizza statistiche del giocatore richiesto
         $stats = $this->calcolaStatistiche(
             $battlelog,
             $profilo['tag'] ?? null
@@ -137,7 +137,7 @@ class Transformer {
                 $playerTag
             );
 
-            // Se il player non viene trovato, salta
+            // Se il player non viene trovato, salta  (penso sia da togliere dato che il giocatore viene trovato per forza)
             if ($brawler === null) {
                 continue;
             }
@@ -158,13 +158,13 @@ class Transformer {
                     // SOLO SHOWDOWN
                     if ($mode === 'soloShowdown') {
 
-                        if ($rank >= 4) {
+                        if ($rank <= 4) {
                             $result = 'victory';
                         } else {
                             $result = 'defeat';
                         }
                     }else if ($mode === 'duoShowdown') {
-                        if ($rank >= 2) {
+                        if ($rank <= 2) {
                             $result = 'victory';
                         } else {
                             $result = 'defeat';
@@ -172,7 +172,7 @@ class Transformer {
                     }
 
                     else if ($mode === 'trioShowdown') {
-                        if ($rank >= 2) {
+                        if ($rank <= 2) {
                             $result = 'victory';
                         } else {
                             $result = 'defeat';
