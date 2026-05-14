@@ -7,13 +7,11 @@ class Router {
     public function gestisciRichiesta($metodo, $parti) {
 
         if ($metodo == 'GET') {
-            // return: restituisce il risultato a index.php
-            // che ci farà echo json_encode()
-            // NON si fa echo qui dentro
+            //  restituisce il risultato a index.php che fara echo json_encode()
             return $this->gestisciGet($parti);
         }
 
-        // Metodo non supportato
+        // gestione metodo non supportato
         http_response_code(405);
         return [
             'success' => false,
@@ -27,13 +25,11 @@ class Router {
     public function gestisciGet($parti) {
 
         // array_search cerca "player" nell'array delle parti
-        // funziona sia con /player/TAG che con /BrawlStars/player/TAG
         $indicePlayer = array_search('player', $parti);
 
         if ($indicePlayer !== false && isset($parti[$indicePlayer + 1]) && $parti[$indicePlayer + 1] !== '') {
 
             $tag = $parti[$indicePlayer + 1];
-            // return: passa il risultato su fino a index.php
             return $this->gestisciPlayer($tag);
 
         } else {
@@ -51,7 +47,7 @@ class Router {
 
     private function gestisciPlayer($tag) {
 
-        // Valida il tag con regex
+        // Valida il tag (può contenere solo lettere e numeri)
         if (!preg_match('/^#?[A-Z0-9]+$/i', $tag)) {
             http_response_code(400);
             return [
@@ -64,7 +60,7 @@ class Router {
             ];
         }
 
-        // Chiama l'Aggregator per raccogliere i dati grezzi
+        // Chiama l'Aggregator per raccogliere i dati 
         $aggregator = new Aggregator();
         $dati = $aggregator->raccogliDati($tag);
 
@@ -72,9 +68,9 @@ class Router {
         $transformer = new Transformer();
         $risultato = $transformer->elabora($dati);
 
+        //success
         http_response_code(200);
-        // return: restituisce l'array a index.php
-        // NON si fa echo qui, lo farà solo index.php
+        
         return $risultato;
     }
 }

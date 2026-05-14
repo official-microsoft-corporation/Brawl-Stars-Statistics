@@ -14,7 +14,6 @@ class Transformer {
             $profilo['tag'] ?? null
         );
 
-        // Arricchisce i brawler con usage_rate e win_rate
         $brawlersElaborati = $this->elaboraBrawlers(
             $brawlers,
             $stats['brawler_usage'],
@@ -26,11 +25,10 @@ class Transformer {
 
             'success' => true,
 
+            //tag => array  : la chiave tag contiene quest array (associazione chiave valore) 
             'data' => [
 
-                // =====================================
                 // PROFILO
-                // =====================================
                 'profile' => [
 
                     'tag' => $profilo['tag'] ?? null,
@@ -60,54 +58,39 @@ class Transformer {
                     ]
                 ],
 
-                // =====================================
                 // STATISTICHE RECENTI
-                // =====================================
                 'battle_stats' => [
 
-                    'games_analyzed' =>
-                        $stats['games_analyzed'],
+                    'games_analyzed' => $stats['games_analyzed'],
 
-                    'wins' =>
-                        $stats['wins'],
+                    'wins' => $stats['wins'],
 
-                    'losses' =>
-                        $stats['losses'],
+                    'losses' => $stats['losses'],
 
-                    'win_rate' =>
-                        $stats['win_rate'],
+                    'win_rate' => $stats['win_rate'],
 
-                    'avg_trophy_change' =>
-                        $stats['avg_trophy_change'],
+                    'avg_trophy_change' => $stats['avg_trophy_change'],
 
-                    'most_used_brawler' =>
-                        $stats['most_used_brawler'],
+                    'most_used_brawler' => $stats['most_used_brawler'],
 
-                    'mode_breakdown' =>
-                        $stats['mode_breakdown'],
+                    'mode_breakdown' => $stats['mode_breakdown'],
                 ],
 
-                // =====================================
+                
                 // BRAWLERS
-                // =====================================
                 'brawlers' => $brawlersElaborati,
             ],
 
-            // =====================================
+            
             // META
-            // =====================================
             'meta' => [
-
                 'generated_at' => date('c'),
-
                 'api_calls_made' => 2,
             ]
         ];
     }
 
-    // =========================================================
     // CALCOLO STATISTICHE RECENTI
-    // =========================================================
     private function calcolaStatistiche($battlelog, $playerTag) {
 
         $partite = array_slice($battlelog['items'] ?? [], 0, 10);
@@ -123,6 +106,7 @@ class Transformer {
         $modeGames = [];
         $modeWins = [];
 
+        //scorre tutto l'array delle partite
         foreach ($partite as $partita) {
 
             $battle = $partita['battle'] ?? [];
@@ -141,24 +125,15 @@ class Transformer {
             }
 
             $nomeBrawler = $brawler['name'] ?? 'Unknown';
-
-            // =====================================
-            // GESTIONE SHOWDOWN (SOLO / DUO)
-            // =====================================
-
-           $result = null;
+            
+            //gestione vittorie delle modalità
+            $result = null;
 
             $mode = $battle['mode'] ?? 'unknown';
 
-            // =====================================
             // SHOWDOWN
-            // =====================================
 
-            if (
-                $mode === 'soloShowdown' ||
-                $mode === 'duoShowdown' ||
-                $mode === 'trioShowdown'
-            ) {
+            if ($mode === 'soloShowdown' || $mode === 'duoShowdown' || $mode === 'trioShowdown') {
 
                 $rank = $battle['rank'] ?? null;
 
@@ -172,6 +147,7 @@ class Transformer {
                             $result = 'victory';
                         }
 
+                    //duo e trio showdown contano come vittori
                     } else {
 
                         if ($rank <= 2) {
@@ -276,9 +252,7 @@ class Transformer {
 
                 'wins' => $winsMode,
 
-                'win_rate' => $totGames > 0
-                    ? round(($winsMode / $totGames) * 100, 1)
-                    : 0
+                'win_rate' => $totGames > 0 ? round(($winsMode / $totGames) * 100, 1) : 0
             ];
         }
 

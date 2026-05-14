@@ -5,10 +5,10 @@ require_once __DIR__ . '/../config/config.php';
 class Aggregator{
     public function raccogliDati($tag){
     
+    //%23 è come viene codificato il #
     $profilo    = $this->chiamaAPI('/players/%23' . $tag);
     $battlelog  = $this->chiamaAPI('/players/%23' . $tag . '/battlelog');
 
-    // Restituisce i dati grezzi al Router che li passerà al Transformer
     return [
         'profilo'   => $profilo,
         'battlelog' => $battlelog,
@@ -23,7 +23,6 @@ class Aggregator{
         $curl = curl_init();
         curl_setopt($curl, CURLOPT_URL, $url);
 
-        //returntransfer: restituisce la risposta come stringa invece di stamparla
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
         //mette la chiave nell header prendendola dal file config
@@ -54,7 +53,7 @@ class Aggregator{
             throw new Exception('BRAWLSTARS_UNAVAILABLE', 503);
         }
 
-        //json decode con true converte il json in array associativo php
+        //json decode con true converte il json in array  php
         return json_decode($risposta, true);
     }
 }

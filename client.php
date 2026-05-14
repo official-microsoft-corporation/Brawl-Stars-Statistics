@@ -2,21 +2,25 @@
 $risultato = null;
 $errore = null;
 
-if (isset($_GET['tag'])) {
+if (isset($_GET['tag'])) { //se tag esiste
 
     $tag = $_GET['tag'];
 
+    //server HTTPHOST restituisce il dominiio (localhost)
+    //server SCRIPTNAME restituisce il file corrente (progettotepsit/client.php) dirname restituisce solo la directory (progettotepsit)
     $urlbase = 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']) . '/';
 
-    $url = $urlbase . 'index.php?q=player/' . urlencode($tag);
+    //setup url per la curl verso index
+    $url = $urlbase . 'index.php?q=player/' . $tag;
 
-    // =====================================
-    // CURL
-    // =====================================
+    
+    //setup CURL
+    
     $curl = curl_init();
 
     curl_setopt($curl, CURLOPT_URL, $url);
 
+    //se non metti questo la curl stamperebbe a schermo, così salva in una variabile
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
 
     $risposta = curl_exec($curl);
@@ -25,12 +29,13 @@ if (isset($_GET['tag'])) {
 
     curl_close($curl);
 
+    //getione errori API
     if ($risposta === false) {
 
         $errore = 'Impossibile connettersi al server.';
     }
     else {
-
+        //converte il json in array php
         $risultato = json_decode($risposta, true);
 
         if ($risultato === null) {
@@ -124,17 +129,14 @@ if (isset($_GET['tag'])) {
 
 <?php
 
-// =====================================
-// ERRORE
-// =====================================
+//ERRORE
 if ($errore) {
 
     echo "<p class='errore'>Errore: $errore</p>";
 }
 
-// =====================================
-// RISULTATO
-// =====================================
+
+//RISULTATO DELLA RICHIESTA FATTA AD INDEX.PHP
 elseif ($risultato !== null && $risultato['success']) {
 
     $profilo =
@@ -151,14 +153,14 @@ elseif ($risultato !== null && $risultato['success']) {
 
 ?>
 
-<!-- ===================================== -->
+
 <!-- PROFILO -->
-<!-- ===================================== -->
 <div class="box">
 
     <h2>Profilo</h2>
 
     <p><strong>Nome:</strong>
+        <!-- serve a convertire caratteri html speciali in testo sicuro -->
         <?= htmlspecialchars($profilo['name']) ?>
     </p>
 
@@ -196,9 +198,8 @@ elseif ($risultato !== null && $risultato['success']) {
 
 </div>
 
-<!-- ===================================== -->
 <!-- STATISTICHE RECENTI -->
-<!-- ===================================== -->
+
 <div class="box">
 
     <h2>Statistiche Recenti</h2>
@@ -229,9 +230,9 @@ elseif ($risultato !== null && $risultato['success']) {
 
 </div>
 
-<!-- ===================================== -->
+
 <!-- MODALITA -->
-<!-- ===================================== -->
+
 <div class="box">
 
     <h2>Statistiche Modalità</h2>
@@ -273,9 +274,8 @@ elseif ($risultato !== null && $risultato['success']) {
 
 </div>
 
-<!-- ===================================== -->
 <!-- BRAWLERS -->
-<!-- ===================================== -->
+
 <div class="box">
 
     <h2>Brawlers</h2>
@@ -286,13 +286,13 @@ elseif ($risultato !== null && $risultato['success']) {
 
             <th>Nome</th>
 
-            <th>Power</th>
+            <th>Livello</th>
 
             <th>Rank</th>
 
             <th>Trofei</th>
 
-            <th>Record</th>
+            <th>Record Trofei</th>
 
             <th>Gadget</th>
 
@@ -363,7 +363,7 @@ elseif ($risultato !== null && $risultato['success']) {
             </td>
 
             <td>
-
+                <!--? è operatore ternario (if hypercharge e valorizzata, stampa v altrimenti x)--->
                 <?= !empty($b['hypercharges']) ? '✔' : '✘' ?>
 
             </td>
@@ -373,7 +373,7 @@ elseif ($risultato !== null && $risultato['success']) {
             <?php
 
             $buffies = $b['buffies'];
-
+            //il . è concatenazione
             echo
                 'Gadget: ' . ($buffies['gadget'] ? '✔' : '✘')
                 . ' | ' .
@@ -393,9 +393,9 @@ elseif ($risultato !== null && $risultato['success']) {
 
 </div>
 
-<!-- ===================================== -->
+
 <!-- META -->
-<!-- ===================================== -->
+
 <div class="box">
 
     <h2>Meta</h2>
