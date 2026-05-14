@@ -153,7 +153,7 @@ class Transformer {
 
                 $rank = $battle['rank'] ?? null;
 
-                if ($rank !== null) {
+                
 
                     // SOLO SHOWDOWN
                     if ($mode === 'soloShowdown') {
@@ -179,7 +179,7 @@ class Transformer {
                         }
                     }
                 }
-            }
+            
 
             if ($result === 'victory') {
                 $wins++;
