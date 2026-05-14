@@ -127,8 +127,6 @@ class Transformer {
 
             $battle = $partita['battle'] ?? [];
 
-            $result = $battle['result'] ?? null;
-
             $mode = $battle['mode'] ?? 'unknown';
 
             // Cerca SOLO il brawler del player richiesto
@@ -148,38 +146,49 @@ class Transformer {
             // GESTIONE SHOWDOWN (SOLO / DUO)
             // =====================================
 
-            //showdown non segna nel json vicotry o defeat, ma un rank che indica la posizione
-            if ($mode === 'soloShowdown' || $mode === 'duoShowdown' || $mode === 'trioShowdown') {
+           $result = null;
+
+            $mode = $battle['mode'] ?? 'unknown';
+
+            // =====================================
+            // SHOWDOWN
+            // =====================================
+
+            if (
+                $mode === 'soloShowdown' ||
+                $mode === 'duoShowdown' ||
+                $mode === 'trioShowdown'
+            ) {
 
                 $rank = $battle['rank'] ?? null;
 
-                
+                if ($rank !== null) {
 
-                    // SOLO SHOWDOWN
+                    $result = 'defeat';
+
                     if ($mode === 'soloShowdown') {
 
                         if ($rank <= 4) {
                             $result = 'victory';
-                        } else {
-                            $result = 'defeat';
                         }
-                    }else if ($mode === 'duoShowdown') {
-                        if ($rank <= 2) {
-                            $result = 'victory';
-                        } else {
-                            $result = 'defeat';
-                        }
-                    }
 
-                    else if ($mode === 'trioShowdown') {
+                    } else {
+
                         if ($rank <= 2) {
                             $result = 'victory';
-                        } else {
-                            $result = 'defeat';
                         }
                     }
                 }
-            
+            }
+
+            // =====================================
+            // ALTRE MODALITÀ
+            // =====================================
+
+            else {
+
+                $result = $battle['result'] ?? null;
+            }
 
             if ($result === 'victory') {
                 $wins++;
