@@ -147,7 +147,7 @@ class Transformer {
                             $result = 'victory';
                         }
 
-                    //duo e trio showdown contano come vittori
+                    //gestione di duo e trio 
                     } else {
 
                         if ($rank <= 2) {
@@ -157,12 +157,8 @@ class Transformer {
                 }
             }
 
-            // =====================================
-            // ALTRE MODALITÀ
-            // =====================================
-
+            //gestione tutte altre modalità
             else {
-
                 $result = $battle['result'] ?? null;
             }
 
@@ -174,70 +170,47 @@ class Transformer {
                 $losses++;
             }
 
-            // =====================================
-            // Trofei
-            // =====================================
+            //aggiunge i trofei di ogni partita
             $trophyDiff += $battle['trophyChange'] ?? 0;
 
-            // =====================================
-            // Utilizzo brawler
-            // =====================================
-            $brawlerUsage[$nomeBrawler] =
-                ($brawlerUsage[$nomeBrawler] ?? 0) + 1;
+            // Utilizzo brawler per trovare il brawler piu giocato nelle partite reenti
+            $brawlerUsage[$nomeBrawler] =($brawlerUsage[$nomeBrawler] ?? 0) + 1;
 
-            // =====================================
             // Vittorie per brawler
-            // =====================================
             if ($result === 'victory') {
-
-                $brawlerWins[$nomeBrawler] =
-                    ($brawlerWins[$nomeBrawler] ?? 0) + 1;
+                $brawlerWins[$nomeBrawler] = ($brawlerWins[$nomeBrawler] ?? 0) + 1;
             }
 
-            // =====================================
             // Modalità
-            // =====================================
-            $modeGames[$mode] =
-                ($modeGames[$mode] ?? 0) + 1;
+            $modeGames[$mode] = ($modeGames[$mode] ?? 0) + 1;
 
+            //segno vittorie per ogni singola modalità
             if ($result === 'victory') {
-
-                $modeWins[$mode] =
-                    ($modeWins[$mode] ?? 0) + 1;
+                $modeWins[$mode] = ($modeWins[$mode] ?? 0) + 1;
             }
         }
+        //fine for each
 
         $games = count($partite);
 
-        // =====================================
-        // Win Rate totale
-        // =====================================
-        $winRate = $games > 0
-            ? round(($wins / $games) * 100, 1)
-            : 0;
+        // Win Rate 
+        $winRate = $games > 0 ? round(($wins / $games) * 100, 1) : 0;
 
-        // =====================================
-        // Trofei medi
-        // =====================================
-        $avgTrophyChange = $games > 0
-            ? round($trophyDiff / $games, 1)
-            : 0;
+        // Trofei medi guadagnati
+        $avgTrophyChange = $games > 0 ? round($trophyDiff / $games, 1) : 0;
 
-        // =====================================
         // Brawler più usato
-        // =====================================
         $mostUsed = null;
 
         if (!empty($brawlerUsage)) {
-
+            //ordina brawler del giocatore per presenza nelle partite 
             arsort($brawlerUsage);
 
+            //prende la prima chiave dell'array ordinato brawlerusage e la assegna a mostUsed
             $mostUsed = array_key_first($brawlerUsage);
         }
 
-        // =====================================
         // Breakdown modalità
-        // =====================================
         $modeBreakdown = [];
 
         foreach ($modeGames as $mode => $totGames) {
@@ -279,15 +252,8 @@ class Transformer {
         ];
     }
 
-    // =========================================================
     // ELABORAZIONE BRAWLERS
-    // =========================================================
-    private function elaboraBrawlers(
-        $brawlers,
-        $usage,
-        $wins,
-        $gamesAnalyzed
-    ) {
+    private function elaboraBrawlers($brawlers, $usage, $wins, $gamesAnalyzed) {
 
         $lista = [];
 
@@ -299,13 +265,9 @@ class Transformer {
 
             $vinte = $wins[$nome] ?? 0;
 
-            $usageRate = $gamesAnalyzed > 0
-                ? round(($usato / $gamesAnalyzed) * 100, 1)
-                : 0;
+            $usageRate = $gamesAnalyzed > 0 ? round(($usato / $gamesAnalyzed) * 100, 1) : 0;
 
-            $winRate = $usato > 0
-                ? round(($vinte / $usato) * 100, 1)
-                : 0;
+            $winRate = $usato > 0 ? round(($vinte / $usato) * 100, 1) : 0;
 
             $lista[] = [
 
@@ -328,19 +290,13 @@ class Transformer {
                 'star_powers_unlocked' =>
                     count($b['starPowers'] ?? []),
 
-                // =====================================
                 // EQUIPAGGIAMENTO
-                // =====================================
                 'gears' => $b['gears'] ?? [],
 
-                // =====================================
                 // HYPERCHARGE
-                // =====================================
                 'hypercharges' => $b['hyperCharges'] ?? [],
 
-                // =====================================
                 // BUFFIES
-                // =====================================
                 'buffies' => $b['buffies'] ?? [
                     'gadget' => false,
                     'starPower' => false,
@@ -357,9 +313,7 @@ class Transformer {
         return $lista;
     }
 
-    // =========================================================
     // TROVA IL BRAWLER DEL GIOCATORE
-    // =========================================================
     private function trovaBrawler($battle, $playerTag = null) {
 
         // Modalità team
@@ -367,27 +321,23 @@ class Transformer {
 
             foreach ($battle['teams'] as $team) {
 
+                //scorre tutte le squadre e cerca il tag del giocatore in questione per trovare il brawler che utilizza in quella partita
                 foreach ($team as $player) {
 
-                    if (
-                        isset($player['tag']) &&
-                        strtoupper($player['tag']) === strtoupper($playerTag)
-                    ) {
+                    //se il tag è set e il tag inserito è uguale a quello in quell'indice dell'array
+                    if (isset($player['tag']) && strtoupper($player['tag']) === strtoupper($playerTag) ) {
                         return $player['brawler'] ?? null;
                     }
                 }
             }
         }
 
-        // Modalità players
+        // se non ci sono teams ma giocatori singoli
         if (isset($battle['players'])) {
 
             foreach ($battle['players'] as $player) {
 
-                if (
-                    isset($player['tag']) &&
-                    strtoupper($player['tag']) === strtoupper($playerTag)
-                ) {
+                if (isset($player['tag']) && strtoupper($player['tag']) === strtoupper($playerTag) ) {
                     return $player['brawler'] ?? null;
                 }
             }
