@@ -7,7 +7,8 @@ if (isset($_GET['tag'])) { //se tag esiste
     $tag = $_GET['tag'];
 
     //server HTTPHOST restituisce il dominiio (localhost)
-    //server SCRIPTNAME restituisce il file corrente (progettotepsit/client.php) dirname restituisce solo la directory (progettotepsit)
+    //server SCRIPTNAME restituisce il file corrente (progettotepsit/client.php)
+    //dirname restituisce solo la directory (progettotepsit)
     $urlbase = 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']) . '/';
 
     //setup url per la curl verso index
