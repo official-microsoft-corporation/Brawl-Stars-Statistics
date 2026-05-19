@@ -2,18 +2,19 @@
 
 class Transformer {
 
+    //se $dati['profilo'] esiste assegna il suo valore altrimenti [] (array vuoto)
+
     public function elabora($dati) {
 
-        $profilo   = $dati['profilo'] ?? [];
-        $battlelog = $dati['battlelog'] ?? [];
-        $brawlers  = $profilo['brawlers'] ?? [];
+        
+        $profilo   = $dati['profilo'];
+        $battlelog = $dati['battlelog'];
+        $brawlers  = $profilo['brawlers'];
 
-        // Analizza statistiche del giocatore richiesto
-        $stats = $this->calcolaStatistiche(
-            $battlelog,
-            $profilo['tag'] ?? null
-        );
+        //analizza statistiche del giocatore richiesto
+        $stats = $this->calcolaStatistiche($battlelog, $profilo['tag']);
 
+        //elabora i brawler del giocatore richiesto
         $brawlersElaborati = $this->elaboraBrawlers(
             $brawlers,
             $stats['brawler_usage'],
@@ -25,42 +26,35 @@ class Transformer {
 
             'success' => true,
 
-            //tag => array  : la chiave tag contiene quest array (associazione chiave valore) 
+            //(tag => array)  : la chiave tag contiene quest array (associazione chiave valore) 
             'data' => [
 
                 // PROFILO
                 'profile' => [
 
-                    'tag' => $profilo['tag'] ?? null,
-                    'name' => $profilo['name'] ?? null,
+                    'tag' => $profilo['tag'],
+                    'name' => $profilo['name'],
 
-                    'trophies' => $profilo['trophies'] ?? 0,
-                    'highest_trophies' =>
-                        $profilo['highestTrophies'] ?? 0,
+                    'trophies' => $profilo['trophies'],
+                    'highest_trophies' => $profilo['highestTrophies'],
 
-                    'exp_level' => $profilo['expLevel'] ?? 0,
+                    'exp_level' => $profilo['expLevel'],
 
-                    'solo_victories' =>
-                        $profilo['soloVictories'] ?? 0,
+                    'solo_victories' => $profilo['soloVictories'],
 
-                    'duo_victories' =>
-                        $profilo['duoVictories'] ?? 0,
+                    'duo_victories' => $profilo['duoVictories'],
 
-                    'victories_3v3' =>
-                        $profilo['3vs3Victories'] ?? 0,
+                    'victories_3v3' => $profilo['3vs3Victories'],
 
                     'club' => [
-                        'name' =>
-                            $profilo['club']['name'] ?? null,
+                        'name' => $profilo['club']['name'] ?? null,
 
-                        'tag'  =>
-                            $profilo['club']['tag'] ?? null,
+                        'tag'  => $profilo['club']['tag'] ?? null,
                     ]
                 ],
 
                 // STATISTICHE RECENTI
                 'battle_stats' => [
-
                     'games_analyzed' => $stats['games_analyzed'],
 
                     'wins' => $stats['wins'],
@@ -76,12 +70,10 @@ class Transformer {
                     'mode_breakdown' => $stats['mode_breakdown'],
                 ],
 
-                
                 // BRAWLERS
                 'brawlers' => $brawlersElaborati,
             ],
 
-            
             // META
             'meta' => [
                 'generated_at' => date('c'),
@@ -109,52 +101,40 @@ class Transformer {
         //scorre tutto l'array delle partite
         foreach ($partite as $partita) {
 
-            $battle = $partita['battle'] ?? [];
+            $battle = $partita['battle'];
 
-            $mode = $battle['mode'] ?? 'unknown';
+            $mode = $battle['mode'];
 
-            // Cerca SOLO il brawler del player richiesto
-            $brawler = $this->trovaBrawler(
-                $battle,
-                $playerTag
-            );
+            //cerca SOLO il brawler del player richiesto
+            $brawler = $this->trovaBrawler($battle, $playerTag);
 
-            // Se il player non viene trovato, salta  (penso sia da togliere dato che il giocatore viene trovato per forza)
-            if ($brawler === null) {
-                continue;
-            }
-
-            $nomeBrawler = $brawler['name'] ?? 'Unknown';
+            $nomeBrawler = $brawler['name'];
             
             //gestione vittorie delle modalità
             $result = null;
 
-            $mode = $battle['mode'] ?? 'unknown';
+            $mode = $battle['mode'];
 
             // SHOWDOWN
-
             if ($mode === 'soloShowdown' || $mode === 'duoShowdown' || $mode === 'trioShowdown') {
 
-                $rank = $battle['rank'] ?? null;
+                $rank = $battle['rank'];
+                $result = 'defeat';
 
-                if ($rank !== null) {
+                if ($mode === 'soloShowdown') {
+                    
+                    if ($rank <= 4) {
+                        $result = 'victory';
+                    }
 
-                    $result = 'defeat';
+                //gestione di duo e trio 
+                } else {
 
-                    if ($mode === 'soloShowdown') {
-
-                        if ($rank <= 4) {
-                            $result = 'victory';
-                        }
-
-                    //gestione di duo e trio 
-                    } else {
-
-                        if ($rank <= 2) {
-                            $result = 'victory';
-                        }
+                    if ($rank <= 2) {
+                        $result = 'victory';
                     }
                 }
+                
             }
 
             //gestione tutte altre modalità
@@ -171,9 +151,9 @@ class Transformer {
             }
 
             //aggiunge i trofei di ogni partita
-            $trophyDiff += $battle['trophyChange'] ?? 0;
+            $trophyDiff += $battle['trophyChange'];
 
-            // Utilizzo brawler per trovare il brawler piu giocato nelle partite reenti
+            //utilizzo brawler per trovare il brawler piu giocato nelle partite reenti
             $brawlerUsage[$nomeBrawler] =($brawlerUsage[$nomeBrawler] ?? 0) + 1;
 
             // Vittorie per brawler
@@ -193,32 +173,31 @@ class Transformer {
 
         $games = count($partite);
 
-        // Win Rate 
+        //win Rate 
         $winRate = $games > 0 ? round(($wins / $games) * 100, 1) : 0;
 
-        // Trofei medi guadagnati
+        //trofei medi guadagnati
         $avgTrophyChange = $games > 0 ? round($trophyDiff / $games, 1) : 0;
 
-        // Brawler più usato
+        //brawler più usato
         $mostUsed = null;
 
-        if (!empty($brawlerUsage)) {
-            //ordina brawler del giocatore per presenza nelle partite 
-            arsort($brawlerUsage);
+        
+        //ordina brawler del giocatore per presenza nelle partite 
+        arsort($brawlerUsage);
 
-            //prende la prima chiave dell'array ordinato brawlerusage e la assegna a mostUsed
-            $mostUsed = array_key_first($brawlerUsage);
-        }
+        //prende la prima chiave dell'array ordinato brawlerusage e la assegna a mostUsed
+        $mostUsed = array_key_first($brawlerUsage);
+        
 
-        // Breakdown modalità
+        //breakdown modalità
         $modeBreakdown = [];
 
         foreach ($modeGames as $mode => $totGames) {
 
-            $winsMode = $modeWins[$mode] ?? 0;
+            $winsMode = $modeWins[$mode];
 
             $modeBreakdown[] = [
-
                 'mode' => $mode,
 
                 'games' => $totGames,
@@ -230,7 +209,6 @@ class Transformer {
         }
 
         return [
-
             'games_analyzed' => $games,
 
             'wins' => $wins,
@@ -259,7 +237,7 @@ class Transformer {
 
         foreach ($brawlers as $b) {
 
-            $nome = $b['name'] ?? 'Unknown';
+            $nome = $b['name'];
 
             $usato = $usage[$nome] ?? 0;
 
@@ -275,20 +253,17 @@ class Transformer {
 
                 'name' => $nome,
 
-                'power' => $b['power'] ?? 0,
+                'power' => $b['power'],
 
-                'rank' => $b['rank'] ?? 0,
+                'rank' => $b['rank'],
 
-                'trophies' => $b['trophies'] ?? 0,
+                'trophies' => $b['trophies'],
 
-                'highest_trophies' =>
-                    $b['highestTrophies'] ?? 0,
+                'highest_trophies' => $b['highestTrophies'],
 
-                'gadgets_unlocked' =>
-                    count($b['gadgets'] ?? []),
+                'gadgets_unlocked' => count($b['gadgets'] ?? []),
 
-                'star_powers_unlocked' =>
-                    count($b['starPowers'] ?? []),
+                'star_powers_unlocked' => count($b['starPowers'] ?? []),
 
                 // EQUIPAGGIAMENTO
                 'gears' => $b['gears'] ?? [],
@@ -297,11 +272,7 @@ class Transformer {
                 'hypercharges' => $b['hyperCharges'] ?? [],
 
                 // BUFFIES
-                'buffies' => $b['buffies'] ?? [
-                    'gadget' => false,
-                    'starPower' => false,
-                    'hyperCharge' => false
-                ],
+                'buffies' => $b['buffies'],
             ];
         }
 
@@ -321,11 +292,12 @@ class Transformer {
 
             foreach ($battle['teams'] as $team) {
 
-                //scorre tutte le squadre e cerca il tag del giocatore in questione per trovare il brawler che utilizza in quella partita
+                /*scorre tutte le squadre e cerca il tag del giocatore 
+                per trovare il brawler che utilizza in quella partita */
                 foreach ($team as $player) {
 
                     //se il tag è set e il tag inserito è uguale a quello in quell'indice dell'array
-                    if (isset($player['tag']) && strtoupper($player['tag']) === strtoupper($playerTag) ) {
+                    if (strtoupper($player['tag']) === strtoupper($playerTag) ) {
                         return $player['brawler'] ?? null;
                     }
                 }
@@ -337,14 +309,12 @@ class Transformer {
 
             foreach ($battle['players'] as $player) {
 
-                if (isset($player['tag']) && strtoupper($player['tag']) === strtoupper($playerTag) ) {
+                if (strtoupper($player['tag']) === strtoupper($playerTag) ) {
                     return $player['brawler'] ?? null;
                 }
             }
         }
-
         return null;
     }
 }
-
 ?>
