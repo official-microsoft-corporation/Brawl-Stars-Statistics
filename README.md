@@ -6,7 +6,6 @@ Servizio web sviluppato in PHP che utilizza l’API ufficiale di Brawl Stars per
 
 * Recupero profilo giocatore
 * Analisi ultime partite
-* Calcolo win rate
 * Statistiche per modalità
 * Brawler più utilizzato
 * Analisi brawler:
@@ -17,9 +16,6 @@ Servizio web sviluppato in PHP che utilizza l’API ufficiale di Brawl Stars per
   * star powers
   * gears
   * hypercharge
-* Gestione modalità Showdown tramite rank
-* Output JSON strutturato
-* Client web PHP integrato
 
 ---
 
