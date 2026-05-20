@@ -27,13 +27,13 @@ Servizio web sviluppato in PHP che utilizza l’API ufficiale di Brawl Stars per
 
 ```text
 client.php         -> Interfaccia web
-index.php          -> Router API
-aggregator.php     -> Recupero dati API Brawl Stars
-Transformer.php    -> Elaborazione statistiche
+index.php          -> Inoltra la richiesta a Router.php e poi restituira' il JSON finale al client
+Router.php         -> Validare il tag e gestire il resto del servizio
+Aggregator.php     -> metodo verso API Brawl Stars
+Transformer.php    -> Elaborazione statistiche e JSON finale
 ```
 
 ---
-
 # Endpoint API
 
 ## Recupero statistiche player
@@ -46,25 +46,6 @@ GET /index.php?q=player/{TAG}
 
 ```http
 GET /index.php?q=player/8U2LGRQ
-```
-
----
-
-# Risposta JSON
-
-```json
-{
-  "success": true,
-  "data": {
-    "profile": {},
-    "battle_stats": {},
-    "brawlers": []
-  },
-  "meta": {
-    "generated_at": "2026-05-19T10:00:00+00:00",
-    "api_calls_made": 2
-  }
-}
 ```
 
 ---
